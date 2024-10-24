@@ -6,50 +6,58 @@
 //
 
 import Foundation
-
-enum APError: Error {
-    case invalidURL
-    case unableToComplete
-    case invalidReponse
-    case invalidData
-    case decodingError
-}
+import Combine
+import Alamofire
 
 class NetworkManager {
-    static let baseURL = "https://pokeapi.co/api/v2/pokemon/ditto"
     
-    init() {}
+    private let baseURL = "https://pokeapi.co/api/v2/pokemon"
+    private var cancellables = Set<AnyCancellable>()
     
-    func getOflistOfPokemon(completed: @escaping (Result<[PokemonModel], APError>) -> Void ) {
-        guard let url = URL(string: NetworkManager.baseURL) else {
-            completed(.failure(.invalidURL))
-            return
-            
+    func fetchPokemonList(limit: Int) -> AnyPublisher<[PokemonModel], Error> {
+        let url = "\(baseURL)?limit=\(limit)"
+        return Future<[PokemonModel], Error> { promise in
+            AF.request(url)
+                .validate()
+                .responseDecodable(of: PokemonListResponse.self) { response in
+                    switch response.result {
+                    case .success(let listResponse):
+                        print("Pokemon List Response: \(listResponse)")
+                        let pokemonDetailsPublishers = listResponse.results.map { self.fetchPokemonDetails(url: $0.url) }
+                        Publishers.MergeMany(pokemonDetailsPublishers)
+                            .collect()
+                            .sink(receiveCompletion: { completion in
+                                if case .failure(let error) = completion {
+                                    print("Error in fetching pokemon details: \(error.localizedDescription)")
+                                    promise(.failure(error))
+                                }
+                            }, receiveValue: { pokemons in
+                                print("Fetched Pokemons: \(pokemons.count)")
+                                promise(.success(pokemons))
+                            })
+                            .store(in: &self.cancellables)
+                    case .failure(let error):
+                        print("Error fetching pokemon list: \(error.localizedDescription)")
+                        promise(.failure(error))
+                    }
+                }
         }
-        let task = URLSession.shared.dataTask(with: url) {data, _, error in
-            
-            guard let data = data?.parseData(removeString: "null,") else {
-                completed(.failure(.decodingError))
-                return
-            }
-            do {
-                let decoder = JSONDecoder()
-                let decodeReponse = try decoder.decode([PokemonModel].self, from: data)
-                completed(.success(decodeReponse))
-            } catch {
-                (print("Debug: error: \(error.localizedDescription)"))
-                completed(.failure(.decodingError))
-            }
-        }
-        task.resume()
+        .eraseToAnyPublisher()
     }
-}
 
-extension Data {
-    func parseData(removeString word: String) -> Data? {
-        let dataAsString = String(data: self, encoding: .utf8)
-        let parseDataString = dataAsString?.replacingOccurrences(of: word, with: "")
-        guard let data = parseDataString?.data(using: .utf8) else { return nil }
-        return data
+    private func fetchPokemonDetails(url: String) -> AnyPublisher<PokemonModel, Error> {
+        return Future<PokemonModel, Error> { promise in
+            AF.request(url)
+                .validate()
+                .responseDecodable(of: PokemonModel.self) { response in
+                    switch response.result {
+                    case .success(let pokemon):
+                        promise(.success(pokemon))
+                    case .failure(let error):
+                        promise(.failure(error))
+                    }
+                }
+        }
+        .eraseToAnyPublisher()
     }
 }
