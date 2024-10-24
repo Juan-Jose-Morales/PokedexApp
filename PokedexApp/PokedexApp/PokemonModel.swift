@@ -7,12 +7,33 @@
 
 import Foundation
 
-struct PokemonModel: Codable, Hashable {
+struct PokemonModel: Decodable, Identifiable {
     
     let id: Int
-    let attack: Int
-    let defense: Int
-    let description: String
     let name: String
-    let type: String
+    let types: [PokemonTypeEntry]
+    let weight: Int
+    let height: Int
+    let sprites: Sprite
+}
+
+struct Sprite: Decodable {
+    let front_default: String
+}
+
+struct PokemonTypeEntry: Decodable {
+    let type: PokemonType
+}
+
+struct PokemonType: Decodable {
+    let name: String
+}
+
+struct PokemonListResponse: Decodable {
+    let results: [PokemonEntry]
+}
+
+struct PokemonEntry: Decodable {
+    let name: String
+    let url: String
 }
