@@ -32,29 +32,51 @@ class PokemonViewModel: ObservableObject {
                 }
                 
             },receiveValue: { pokemons in
-                self.pokemons = pokemons
+                self.pokemons = pokemons.sorted(by: {$0.id < $1.id})
             })
             .store(in: &cancellables)
     }
     
     func backgroundColor(for type: String) -> Color {
-           switch type {
-           case "fire":
-               return Color.orange
-           case "water":
-               return Color.blue
-           case "grass":
-               return Color.green
-           case "electric":
-               return Color.yellow
-           case "poison":
-               return Color.purple
-           case "ground":
-               return Color.brown
-           case "flying":
-               return Color.cyan
-           default:
-               return Color.gray
-           }
-       }
+        switch type {
+        case "fire":
+            return Color.orange
+        case "water":
+            return Color.blue
+        case "grass":
+            return Color.green
+        case "electric":
+            return Color.yellow
+        case "poison":
+            return Color("Veneno")
+        case "ground":
+            return Color("Tierra")
+        case "rock":
+            return Color("Roca")
+        case "flying":
+            return Color.cyan
+        case "bug":
+            return Color("Bicho")
+        case "steel":
+            return Color("Acero")
+        case "ice":
+            return Color("Hielo")
+        case "normal":
+            return Color("Normal")
+        case "fighting":
+            return Color("Lucha")
+        case "fairy":
+            return Color("Hada")
+        case "psychic":
+            return Color("Psiquico")
+        case "ghost":
+            return Color("Fantasma")
+        case "dragon":
+            return Color("Dragon")
+        case "dark":
+            return Color("Siniestro")
+        default:
+            return Color.gray
+        }
+    }
 }

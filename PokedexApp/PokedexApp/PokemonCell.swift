@@ -18,12 +18,14 @@ struct PokemonCell: View {
                 image
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 100, height: 100)
+                    .frame(width: 80, height: 80)
             } placeholder: {
                 ProgressView()
             }
             Text(pokemon.name.capitalized)
                 .font(.caption)
+                .foregroundColor(.black)
+                
         }
         .padding()
         .background(color)
